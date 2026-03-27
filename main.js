@@ -1,3 +1,23 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+// ==========================================
+// 💡 Firebase 설정 (Config) 삽입 위치
+// 아래 firebaseConfig 객체를 본인의 Firebase 웹 앱 설정 값으로 덮어쓰세요!
+// ==========================================
+const firebaseConfig = {
+    apiKey: "AIzaSyDTNmKGZppVPEnQydSg98n3mA_fgQAPfFQ",
+    authDomain: "pallet-request.firebaseapp.com",
+    projectId: "pallet-request",
+    storageBucket: "pallet-request.firebasestorage.app",
+    messagingSenderId: "11998640289",
+    appId: "1:11998640289:web:c7cfcc302266eaeba7d8e0",
+    measurementId: "G-V5YMX0D4D4"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
 // State Management
 const STATE_KEY = 'pallet_app_data_v3';
 
@@ -16,28 +36,46 @@ const DEFAULT_STATE = {
         { name: '명진TSR', categories: ['SUS', 'Poly'], password: '3333' },
         { name: '삼건세기', categories: ['Poly'], password: '3333' }
     ],
-    requests: {} 
+    requests: {}
 };
 
-let state = JSON.parse(localStorage.getItem(STATE_KEY)) || DEFAULT_STATE;
+let state = DEFAULT_STATE;
 
-// Migration check: If loaded state from previous version is missing adminPassword
-if (!state.adminPassword) {
-    state.adminPassword = DEFAULT_STATE.adminPassword;
+async function loadState() {
+    try {
+        const docRef = doc(db, "app_data", STATE_KEY);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            state = docSnap.data();
+
+            // Migration check
+            if (!state.adminPassword) {
+                state.adminPassword = DEFAULT_STATE.adminPassword;
+            }
+            state.partners.forEach(p => {
+                if (p.category) {
+                    if (p.name === '진명') p.categories = ['Steel', 'SUS'];
+                    else if (p.name === '명진TSR') p.categories = ['SUS', 'Poly'];
+                    else p.categories = [p.category];
+                    delete p.category;
+                }
+            });
+        } else {
+            await saveState(); // 최초 접속 시 초기 데이터 생성
+        }
+    } catch (error) {
+        console.error("Firebase 데이터 로드 오류:", error);
+        alert("데이터베이스 연결에 실패했습니다. Firebase 설정을 확인해주세요.");
+    }
 }
 
-// Migration check: If loaded state has partners with single 'category' string
-state.partners.forEach(p => {
-    if (p.category) {
-        if (p.name === '진명') p.categories = ['Steel', 'SUS'];
-        else if (p.name === '명진TSR') p.categories = ['SUS', 'Poly'];
-        else p.categories = [p.category];
-        delete p.category;
+async function saveState() {
+    try {
+        await setDoc(doc(db, "app_data", STATE_KEY), state);
+    } catch (error) {
+        console.error("Firebase 데이터 저장 오류:", error);
+        alert("데이터 저장 중 오류가 발생했습니다.");
     }
-});
-
-function saveState() {
-    localStorage.setItem(STATE_KEY, JSON.stringify(state));
 }
 
 // Date Helpers
@@ -61,10 +99,10 @@ function formatWeekLabel(date) {
     const monday = getWeekMonday(date);
     const friday = new Date(monday);
     friday.setDate(monday.getDate() + 4);
-    
+
     const mStr = `${monday.getMonth() + 1}/${monday.getDate()}`;
     const fStr = `${friday.getMonth() + 1}/${friday.getDate()}`;
-    
+
     return `${weekNum}주 (${mStr} ~ ${fStr})`;
 }
 
@@ -95,7 +133,7 @@ function initWeekSelector() {
     weekSelect.innerHTML = '';
     weekDatesMap = {};
     const today = new Date();
-    
+
     // Create options for: 1 week ahead (default), current week, and 3 weeks back
     for (let i = 1; i >= -3; i--) {
         const d = new Date(today);
@@ -105,7 +143,7 @@ function initWeekSelector() {
         let label = formatWeekLabel(d);
         if (i === 0) label = label.replace('주 ', '주 (현재 주차) ');
         else if (i === 1) label = label.replace('주 ', '주 (차주) ');
-        
+
         const option = document.createElement('option');
         option.value = weekNum;
         option.textContent = label;
@@ -117,13 +155,13 @@ function initWeekSelector() {
 // Initialize Partner List
 function initPartnerSelector() {
     const pwPartnerSelect = document.getElementById('pw-partner-select');
-    
+
     state.partners.forEach(p => {
         const opt = document.createElement('option');
         opt.value = p.name;
         opt.textContent = p.name;
         partnerSelect.appendChild(opt);
-        
+
         if (pwPartnerSelect) {
             const pwOpt = document.createElement('option');
             pwOpt.value = p.name;
@@ -143,7 +181,7 @@ btnAdmin.addEventListener('click', () => {
 btnAdminLogin.addEventListener('click', () => {
     console.log('Login attempt with:', adminPassInput.value);
     console.log('Current state admin pass:', state.adminPassword);
-    
+
     if (adminPassInput.value === state.adminPassword) {
         console.log('Login success');
         adminModal.classList.add('hidden');
@@ -191,7 +229,7 @@ function prefillForm() {
     document.querySelectorAll('#submission-form input[type="number"]').forEach(input => input.value = 0);
 
     const partnerData = (state.requests[week] && state.requests[week][partnerName]) || {};
-    
+
     const sections = document.querySelectorAll('.pallet-type-section');
     sections.forEach(section => {
         const type = section.dataset.type;
@@ -212,7 +250,7 @@ function updateFormDateLabels() {
 
     const days = ['mon', 'tue', 'wed', 'thu', 'fri'];
     const koDays = ['월', '화', '수', '목', '금'];
-    
+
     document.querySelectorAll('.pallet-type-section').forEach(section => {
         days.forEach((day, index) => {
             const input = section.querySelector(`input[data-day="${day}"]`);
@@ -250,13 +288,13 @@ weekSelect.addEventListener('change', () => {
 });
 
 // Form Submission with Password Check
-submissionForm.addEventListener('submit', (e) => {
+submissionForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     const partnerName = partnerSelect.value;
     const week = weekSelect.value;
     const password = partnerPasswordInput.value;
-    
+
     const partner = state.partners.find(p => p.name === partnerName);
     if (!partner) return;
 
@@ -279,7 +317,7 @@ submissionForm.addEventListener('submit', (e) => {
         state.requests[week][partnerName][type] = data;
     });
 
-    saveState();
+    await saveState();
     alert(`${partnerName} 업체의 ${week}주차 소요량이 접수되었습니다.`);
     partnerPasswordInput.value = '';
 });
@@ -288,9 +326,9 @@ submissionForm.addEventListener('submit', (e) => {
 function renderAdminDashboard() {
     const week = weekSelect.value;
     const weekRequests = state.requests[week] || {};
-    
+
     tableBody.innerHTML = '';
-    
+
     // Category-wise totals per day
     const catTotals = {
         Steel: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0, week: 0 },
@@ -300,11 +338,11 @@ function renderAdminDashboard() {
 
     state.partners.forEach(partner => {
         const partnerData = weekRequests[partner.name] || {};
-        
+
         ['Steel', 'SUS', 'Poly'].forEach(cat => {
             const typeData = partnerData[cat] || { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 };
             const rowTotal = Object.values(typeData).reduce((a, b) => a + b, 0);
-            
+
             if (rowTotal > 0 || partner.categories.includes(cat)) {
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -374,17 +412,23 @@ function renderAdminDashboard() {
 }
 
 // Initialization
-initWeekSelector();
-initPartnerSelector();
-tableTitle.textContent = `${weekSelect.options[weekSelect.selectedIndex].text} 사외 협력사 팔레트 필요 수량`;
-updateFormDateLabels();
+async function initializeAppUI() {
+    await loadState();
+
+    initWeekSelector();
+    initPartnerSelector();
+    tableTitle.textContent = `${weekSelect.options[weekSelect.selectedIndex].text} 사외 협력사 팔레트 필요 수량`;
+    updateFormDateLabels();
+}
+
+initializeAppUI();
 
 // Export & Clear logic
 document.getElementById('btn-export').addEventListener('click', () => {
     const week = weekSelect.value;
     const weekRequests = state.requests[week] || {};
     let csv = '\uFEFF';
-    
+
     // Get Dates for Headers
     const monday = weekDatesMap[week];
     const koDays = ['월', '화', '수', '목', '금'];
@@ -394,9 +438,9 @@ document.getElementById('btn-export').addEventListener('click', () => {
         d.setDate(monday.getDate() + index);
         return `${d.getDate()}(${ko})`;
     });
-    
+
     csv += `업체명,구분,${dateHeaders[0]},${dateHeaders[1]},${dateHeaders[2]},${dateHeaders[3]},${dateHeaders[4]},주 총합\n`;
-    
+
     const catTotals = {
         Steel: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0, week: 0 },
         SUS: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0, week: 0 },
@@ -408,10 +452,10 @@ document.getElementById('btn-export').addEventListener('click', () => {
         ['Steel', 'SUS', 'Poly'].forEach(cat => {
             const typeData = partnerData[cat] || { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 };
             const rowTotal = Object.values(typeData).reduce((a, b) => a + b, 0);
-            
+
             if (rowTotal > 0 || partner.categories.includes(cat)) {
                 csv += `${partner.name},${cat},${typeData.mon},${typeData.tue},${typeData.wed},${typeData.thu},${typeData.fri},${rowTotal}\n`;
-                
+
                 ['mon', 'tue', 'wed', 'thu', 'fri'].forEach(day => {
                     catTotals[cat][day] += typeData[day] || 0;
                 });
@@ -419,7 +463,7 @@ document.getElementById('btn-export').addEventListener('click', () => {
             }
         });
     });
-    
+
     const grandTotals = {
         mon: catTotals.Steel.mon + catTotals.SUS.mon + catTotals.Poly.mon,
         tue: catTotals.Steel.tue + catTotals.SUS.tue + catTotals.Poly.tue,
@@ -428,7 +472,7 @@ document.getElementById('btn-export').addEventListener('click', () => {
         fri: catTotals.Steel.fri + catTotals.SUS.fri + catTotals.Poly.fri,
         week: catTotals.Steel.week + catTotals.SUS.week + catTotals.Poly.week
     };
-    
+
     csv += `\n`;
     ['Steel', 'SUS', 'Poly'].forEach(cat => {
         csv += `${cat} 소계,,${catTotals[cat].mon},${catTotals[cat].tue},${catTotals[cat].wed},${catTotals[cat].thu},${catTotals[cat].fri},${catTotals[cat].week}\n`;
@@ -442,19 +486,19 @@ document.getElementById('btn-export').addEventListener('click', () => {
     link.click();
 });
 
-document.getElementById('btn-clear').addEventListener('click', () => {
+document.getElementById('btn-clear').addEventListener('click', async () => {
     if (confirm('모든 데이터를 초기화하시겠습니까?')) {
         state.requests = {};
-        saveState();
+        await saveState();
         location.reload();
     }
 });
 
 // Password Management Logic
-document.getElementById('btn-change-admin-pw').addEventListener('click', () => {
+document.getElementById('btn-change-admin-pw').addEventListener('click', async () => {
     const currentPw = document.getElementById('admin-current-pw').value;
     const newPw = document.getElementById('admin-new-pw').value;
-    
+
     if (currentPw !== state.adminPassword) {
         alert('현재 관리자 비밀번호가 일치하지 않습니다.');
         return;
@@ -463,18 +507,18 @@ document.getElementById('btn-change-admin-pw').addEventListener('click', () => {
         alert('새 비밀번호를 입력해주세요.');
         return;
     }
-    
+
     state.adminPassword = newPw;
-    saveState();
+    await saveState();
     alert('관리자 비밀번호가 성공적으로 변경되었습니다.');
     document.getElementById('admin-current-pw').value = '';
     document.getElementById('admin-new-pw').value = '';
 });
 
-document.getElementById('btn-change-partner-pw').addEventListener('click', () => {
+document.getElementById('btn-change-partner-pw').addEventListener('click', async () => {
     const partnerName = document.getElementById('pw-partner-select').value;
     const newPw = document.getElementById('partner-new-pw').value;
-    
+
     if (!partnerName) {
         alert('업체를 선택해주세요.');
         return;
@@ -483,11 +527,11 @@ document.getElementById('btn-change-partner-pw').addEventListener('click', () =>
         alert('새 비밀번호를 입력해주세요.');
         return;
     }
-    
+
     const partner = state.partners.find(p => p.name === partnerName);
     if (partner) {
         partner.password = newPw;
-        saveState();
+        await saveState();
         alert(`${partnerName} 업체의 비밀번호가 성공적으로 변경되었습니다.`);
         document.getElementById('partner-new-pw').value = '';
     }
