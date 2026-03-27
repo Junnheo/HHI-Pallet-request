@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>팔레트 소요량 접수 시스템</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=6">
+</head>
+<body class="dark-theme">
+    <div id="app">
+        <header>
+            <div class="header-content">
+                <div class="logo">
+                    <span class="icon">📦</span>
+                    <h1>팔레트 소요 시스템</h1>
+                </div>
+                <div class="week-selector">
+                    <label for="week-select">주차 선택:</label>
+                    <select id="week-select">
+                        <option value="612">612주 (3/16 ~ 3/20)</option>
+                        <option value="613">613주 (3/23 ~ 3/27)</option>
+                    </select>
+                </div>
+                <nav class="view-toggle">
+                    <button id="btn-partner" class="active">업체 접수</button>
+                    <button id="btn-admin">관리자 대시보드</button>
+                </nav>
+            </div>
+        </header>
+
+        <main>
+            <!-- Partner Submission View -->
+            <section id="partner-view" class="view">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>업체 팔레트 필요 수량 접수</h2>
+                        <p class="subtitle">매주 각 업체의 일별 팔레트 필요 수량을 입력해주세요.</p>
+                    </div>
+                    <form id="submission-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="partner-select">업체명</label>
+                                <select id="partner-select" required>
+                                    <option value="" disabled selected>업체를 선택하세요</option>
+                                    <!-- Options will be generated dynamically -->
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="partner-password">접속 비밀번호</label>
+                                <input type="password" id="partner-password" placeholder="비밀번호 입력" required>
+                            </div>
+                        </div>
+
+                        <div class="pallet-inputs">
+                            <div class="pallet-type-section" data-type="Steel">
+                                <h3>Steel 팔레트</h3>
+                                <div class="grid-inputs">
+                                    <div class="input-item"><label>월(16)</label><input type="number" min="0" data-day="mon" value="0"></div>
+                                    <div class="input-item"><label>화(17)</label><input type="number" min="0" data-day="tue" value="0"></div>
+                                    <div class="input-item"><label>수(18)</label><input type="number" min="0" data-day="wed" value="0"></div>
+                                    <div class="input-item"><label>목(19)</label><input type="number" min="0" data-day="thu" value="0"></div>
+                                    <div class="input-item"><label>금(20)</label><input type="number" min="0" data-day="fri" value="0"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="pallet-type-section" data-type="SUS">
+                                <h3>SUS 팔레트</h3>
+                                <div class="grid-inputs">
+                                    <div class="input-item"><label>월(16)</label><input type="number" min="0" data-day="mon" value="0"></div>
+                                    <div class="input-item"><label>화(17)</label><input type="number" min="0" data-day="tue" value="0"></div>
+                                    <div class="input-item"><label>수(18)</label><input type="number" min="0" data-day="wed" value="0"></div>
+                                    <div class="input-item"><label>목(19)</label><input type="number" min="0" data-day="thu" value="0"></div>
+                                    <div class="input-item"><label>금(20)</label><input type="number" min="0" data-day="fri" value="0"></div>
+                                </div>
+                            </div>
+
+                            <div class="pallet-type-section" data-type="Poly">
+                                <h3>Poly 팔레트</h3>
+                                <div class="grid-inputs">
+                                    <div class="input-item"><label>월(16)</label><input type="number" min="0" data-day="mon" value="0"></div>
+                                    <div class="input-item"><label>화(17)</label><input type="number" min="0" data-day="tue" value="0"></div>
+                                    <div class="input-item"><label>수(18)</label><input type="number" min="0" data-day="wed" value="0"></div>
+                                    <div class="input-item"><label>목(19)</label><input type="number" min="0" data-day="thu" value="0"></div>
+                                    <div class="input-item"><label>금(20)</label><input type="number" min="0" data-day="fri" value="0"></div>
+                                </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">정보 제출하기</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Admin Dashboard View -->
+            <section id="admin-view" class="view hidden">
+                <div class="toolbar">
+                    <button id="btn-export" class="btn-secondary">CSV로 내보내기</button>
+                    <button id="btn-clear" class="btn-danger">데이터 초기화</button>
+                </div>
+                
+                <div class="card table-card">
+                    <div class="card-header">
+                        <h2 id="table-title">612주 사외 협력사 팔레트 필요 수량</h2>
+                    </div>
+                    <div class="table-container">
+                        <table id="consolidation-table">
+                            <thead>
+                                <tr>
+                                    <th>업체명</th>
+                                    <th>구분</th>
+                                    <th>16(월)</th>
+                                    <th>17(화)</th>
+                                    <th>18(수)</th>
+                                    <th>19(목)</th>
+                                    <th>20(금)</th>
+                                    <th>주 총합</th>
+                                    <th>비고</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body">
+                                <!-- Data rows will be injected here -->
+                            </tbody>
+                            <tfoot>
+                                <!-- Totals will be injected here -->
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="summary-cards">
+                    <div class="summary-card">
+                        <h3>Steel 총합</h3>
+                        <p id="total-steel">0</p>
+                    </div>
+                    <div class="summary-card">
+                        <h3>SUS 총합</h3>
+                        <p id="total-sus">0</p>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Poly 총합</h3>
+                        <p id="total-poly">0</p>
+                    </div>
+                    <div class="summary-card highlight">
+                        <h3>주간 전체 총합</h3>
+                        <p id="total-grand">0</p>
+                    </div>
+                </div>
+
+                <!-- Password Management Section -->
+                <div class="card password-card" style="margin-top: 2rem;">
+                    <div class="card-header">
+                        <h2>🔑 비밀번호 관리</h2>
+                        <p class="subtitle">관리자 및 각 업체의 접속 비밀번호를 안전하게 변경할 수 있습니다.</p>
+                    </div>
+                    
+                    <div class="password-grid">
+                        <!-- Admin Password -->
+                        <div class="form-section">
+                            <h3 style="margin-bottom: 1rem; color: var(--primary-color);">관리자 비밀번호</h3>
+                            <div class="form-group">
+                                <label for="admin-current-pw">현재 관리자 비밀번호</label>
+                                <input type="password" id="admin-current-pw" placeholder="현재 비밀번호를 입력" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="admin-new-pw">새 관리자 비밀번호</label>
+                                <input type="password" id="admin-new-pw" placeholder="새로운 비밀번호를 입력" required>
+                            </div>
+                            <button id="btn-change-admin-pw" class="btn-primary" style="width: 100%; padding: 0.8rem;">관리자 비밀번호 변경</button>
+                        </div>
+                        
+                        <!-- Partner Password -->
+                        <div class="form-section">
+                            <h3 style="margin-bottom: 1rem; color: var(--primary-color);">업체 비밀번호</h3>
+                            <div class="form-group">
+                                <label for="pw-partner-select">비밀번호 변경 대상 업체</label>
+                                <select id="pw-partner-select" required>
+                                    <option value="" disabled selected>업체를 선택하세요</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="partner-new-pw">새 업체 비밀번호</label>
+                                <input type="text" id="partner-new-pw" placeholder="새 비밀번호 (예: 1234)" required>
+                            </div>
+                            <button id="btn-change-partner-pw" class="btn-secondary" style="width: 100%; padding: 0.8rem;">업체 비밀번호 변경</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Admin Login Modal -->
+        <div id="admin-login-modal" class="modal hidden">
+            <div class="modal-content">
+                <h3>관리자 인증</h3>
+                <p>대시보드 접근을 위해 비밀번호를 입력하세요.</p>
+                <input type="password" id="admin-password-input" placeholder="관리자 비밀번호">
+                <div class="modal-actions">
+                    <button id="btn-admin-login" class="btn-primary">확인</button>
+                    <button id="btn-admin-cancel" class="btn-secondary">취소</button>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>&copy; 2026 팔레트 관리 협력 시스템</p>
+        </footer>
+    </div>
+    <script src="main.js?v=6"></script>
+</body>
+</html>
