@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=6">
+    <link rel="stylesheet" href="style.css?v=7">
 </head>
 <body class="dark-theme">
     <div id="app">
@@ -26,6 +26,7 @@
                 </div>
                 <nav class="view-toggle">
                     <button id="btn-partner" class="active">업체 접수</button>
+                    <button id="btn-summary">집계표</button>
                     <button id="btn-admin">관리자 대시보드</button>
                 </nav>
             </div>
@@ -92,6 +93,61 @@
                             <button type="submit" class="btn-primary">정보 제출하기</button>
                         </div>
                     </form>
+                </div>
+            </section>
+
+            <!-- Summary View -->
+            <section id="summary-view" class="view hidden">
+                <div class="toolbar">
+                    <button id="btn-summary-export" class="btn-secondary">CSV로 내보내기</button>
+                </div>
+                
+                <div class="card table-card">
+                    <div class="card-header">
+                        <h2 id="summary-table-title">612주 사외 협력사 팔레트 필요 수량</h2>
+                    </div>
+                    <div class="table-container">
+                        <table id="summary-consolidation-table">
+                            <thead>
+                                <tr>
+                                    <th>업체명</th>
+                                    <th>구분</th>
+                                    <th>16(월)</th>
+                                    <th>17(화)</th>
+                                    <th>18(수)</th>
+                                    <th>19(목)</th>
+                                    <th>20(금)</th>
+                                    <th>주 총합</th>
+                                    <th>비고</th>
+                                </tr>
+                            </thead>
+                            <tbody id="summary-table-body">
+                                <!-- Data rows will be injected here -->
+                            </tbody>
+                            <tfoot>
+                                <!-- Totals will be injected here -->
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="summary-cards">
+                    <div class="summary-card">
+                        <h3>Steel 총합</h3>
+                        <p id="summary-total-steel">0</p>
+                    </div>
+                    <div class="summary-card">
+                        <h3>SUS 총합</h3>
+                        <p id="summary-total-sus">0</p>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Poly 총합</h3>
+                        <p id="summary-total-poly">0</p>
+                    </div>
+                    <div class="summary-card highlight">
+                        <h3>주간 전체 총합</h3>
+                        <p id="summary-total-grand">0</p>
+                    </div>
                 </div>
             </section>
 
@@ -209,6 +265,6 @@
             <p>&copy; 2026 팔레트 관리 협력 시스템</p>
         </footer>
     </div>
-    <script type="module" src="main.js?v=7"></script>
+    <script type="module" src="main.js?v=8"></script>
 </body>
 </html>

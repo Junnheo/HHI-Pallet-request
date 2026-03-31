@@ -109,8 +109,10 @@ function formatWeekLabel(date) {
 // DOM Elements
 const partnerView = document.getElementById('partner-view');
 const adminView = document.getElementById('admin-view');
+const summaryView = document.getElementById('summary-view');
 const btnPartner = document.getElementById('btn-partner');
 const btnAdmin = document.getElementById('btn-admin');
+const btnSummary = document.getElementById('btn-summary');
 const submissionForm = document.getElementById('submission-form');
 const weekSelect = document.getElementById('week-select');
 const partnerSelect = document.getElementById('partner-select');
@@ -118,6 +120,9 @@ const partnerPasswordInput = document.getElementById('partner-password');
 const tableBody = document.getElementById('table-body');
 const tableFoot = document.querySelector('#consolidation-table tfoot');
 const tableTitle = document.getElementById('table-title');
+const summaryTableBody = document.getElementById('summary-table-body');
+const summaryTableFoot = document.querySelector('#summary-consolidation-table tfoot');
+const summaryTableTitle = document.getElementById('summary-table-title');
 const numberInputs = document.querySelectorAll('input[type="number"]');
 
 // Modal Elements
@@ -178,6 +183,18 @@ btnAdmin.addEventListener('click', () => {
     window.scrollTo(0, 0);
 });
 
+btnSummary.addEventListener('click', () => {
+    summaryView.classList.remove('hidden');
+    adminView.classList.add('hidden');
+    partnerView.classList.add('hidden');
+    adminModal.classList.add('hidden');
+    btnSummary.classList.add('active');
+    btnPartner.classList.remove('active');
+    btnAdmin.classList.remove('active');
+    renderDashboards();
+    window.scrollTo(0, 0);
+});
+
 btnAdminLogin.addEventListener('click', () => {
     console.log('Login attempt with:', adminPassInput.value);
     console.log('Current state admin pass:', state.adminPassword);
@@ -187,9 +204,11 @@ btnAdminLogin.addEventListener('click', () => {
         adminModal.classList.add('hidden');
         adminView.classList.remove('hidden');
         partnerView.classList.add('hidden');
+        summaryView.classList.add('hidden');
         btnAdmin.classList.add('active');
         btnPartner.classList.remove('active');
-        renderAdminDashboard();
+        btnSummary.classList.remove('active');
+        renderDashboards();
         adminPassInput.value = '';
         window.scrollTo(0, 0);
     } else {
@@ -210,8 +229,11 @@ btnAdminCancel.addEventListener('click', () => {
 btnPartner.addEventListener('click', () => {
     partnerView.classList.remove('hidden');
     adminView.classList.add('hidden');
+    summaryView.classList.add('hidden');
+    adminModal.classList.add('hidden');
     btnPartner.classList.add('active');
     btnAdmin.classList.remove('active');
+    btnSummary.classList.remove('active');
     window.scrollTo(0, 0);
 });
 
@@ -259,32 +281,36 @@ function updateFormDateLabels() {
                 if (label && label.tagName === 'LABEL') {
                     const d = new Date(monday);
                     d.setDate(monday.getDate() + index);
-                    label.textContent = `${koDays[index]}(${d.getDate()})`;
+                    label.textContent = `${koDays[index]}(${d.getMonth() + 1}.${d.getDate()})`;
                 }
             }
         });
     });
 
-    // Update Admin Dashboard Table Headers
-    const theadRow = document.querySelector('#consolidation-table thead tr');
-    if (theadRow) {
-        const thElements = theadRow.querySelectorAll('th');
-        if (thElements.length >= 7) {
-            days.forEach((day, index) => {
-                const d = new Date(monday);
-                d.setDate(monday.getDate() + index);
-                thElements[index + 2].textContent = `${d.getDate()}(${koDays[index]})`;
-            });
+    // Update Admin Dashboard & Summary Table Headers
+    [document.querySelector('#consolidation-table thead tr'), document.querySelector('#summary-consolidation-table thead tr')].forEach(theadRow => {
+        if (theadRow) {
+            const thElements = theadRow.querySelectorAll('th');
+            if (thElements.length >= 7) {
+                days.forEach((day, index) => {
+                    const d = new Date(monday);
+                    d.setDate(monday.getDate() + index);
+                    thElements[index + 2].textContent = `${koDays[index]}(${d.getMonth() + 1}.${d.getDate()})`;
+                });
+            }
         }
-    }
+    });
 }
 
 partnerSelect.addEventListener('change', prefillForm);
 weekSelect.addEventListener('change', () => {
     tableTitle.textContent = `${weekSelect.value}주 사외 협력사 팔레트 필요 수량`;
+    summaryTableTitle.textContent = `${weekSelect.value}주 사외 협력사 팔레트 필요 수량`;
     updateFormDateLabels();
     prefillForm();
-    if (!adminView.classList.contains('hidden')) renderAdminDashboard();
+    if (!adminView.classList.contains('hidden') || !summaryView.classList.contains('hidden')) {
+        renderDashboards();
+    }
 });
 
 // Form Submission with Password Check
@@ -322,12 +348,12 @@ submissionForm.addEventListener('submit', async (e) => {
     partnerPasswordInput.value = '';
 });
 
-// Enhanced Rendering Admin Dashboard
-function renderAdminDashboard() {
+// Enhanced Rendering Dashboards
+function renderDashboardData(tBody, tFoot, prefix = '') {
     const week = weekSelect.value;
     const weekRequests = state.requests[week] || {};
 
-    tableBody.innerHTML = '';
+    tBody.innerHTML = '';
 
     // Category-wise totals per day
     const catTotals = {
@@ -356,7 +382,7 @@ function renderAdminDashboard() {
                     <td class="total-cell">${rowTotal}</td>
                     <td contenteditable="true"></td>
                 `;
-                tableBody.appendChild(row);
+                tBody.appendChild(row);
 
                 // Add to category totals
                 ['mon', 'tue', 'wed', 'thu', 'fri'].forEach(day => {
@@ -377,7 +403,7 @@ function renderAdminDashboard() {
     };
 
     // Render footer with Category subtotals
-    tableFoot.innerHTML = `
+    tFoot.innerHTML = `
         <tr class="subtotal-row">
             <td colspan="2" class="subtotal-label">Steel 소계</td>
             <td>${catTotals.Steel.mon}</td><td>${catTotals.Steel.tue}</td><td>${catTotals.Steel.wed}</td><td>${catTotals.Steel.thu}</td><td>${catTotals.Steel.fri}</td>
@@ -405,10 +431,15 @@ function renderAdminDashboard() {
         </tr>
     `;
 
-    document.getElementById('total-steel').textContent = catTotals.Steel.week;
-    document.getElementById('total-sus').textContent = catTotals.SUS.week;
-    document.getElementById('total-poly').textContent = catTotals.Poly.week;
-    document.getElementById('total-grand').textContent = grandTotals.week;
+    document.getElementById(prefix + 'total-steel').textContent = catTotals.Steel.week;
+    document.getElementById(prefix + 'total-sus').textContent = catTotals.SUS.week;
+    document.getElementById(prefix + 'total-poly').textContent = catTotals.Poly.week;
+    document.getElementById(prefix + 'total-grand').textContent = grandTotals.week;
+}
+
+function renderDashboards() {
+    renderDashboardData(tableBody, tableFoot, '');
+    renderDashboardData(summaryTableBody, summaryTableFoot, 'summary-');
 }
 
 // Initialization
@@ -418,13 +449,14 @@ async function initializeAppUI() {
     initWeekSelector();
     initPartnerSelector();
     tableTitle.textContent = `${weekSelect.options[weekSelect.selectedIndex].text} 사외 협력사 팔레트 필요 수량`;
+    summaryTableTitle.textContent = `${weekSelect.options[weekSelect.selectedIndex].text} 사외 협력사 팔레트 필요 수량`;
     updateFormDateLabels();
 }
 
 initializeAppUI();
 
 // Export & Clear logic
-document.getElementById('btn-export').addEventListener('click', () => {
+function exportToCSV() {
     const week = weekSelect.value;
     const weekRequests = state.requests[week] || {};
     let csv = '\uFEFF';
@@ -436,7 +468,7 @@ document.getElementById('btn-export').addEventListener('click', () => {
         if (!monday) return ko;
         const d = new Date(monday);
         d.setDate(monday.getDate() + index);
-        return `${d.getDate()}(${ko})`;
+        return `${ko}(${d.getMonth() + 1}.${d.getDate()})`;
     });
 
     csv += `업체명,구분,${dateHeaders[0]},${dateHeaders[1]},${dateHeaders[2]},${dateHeaders[3]},${dateHeaders[4]},주 총합\n`;
@@ -484,7 +516,10 @@ document.getElementById('btn-export').addEventListener('click', () => {
     link.href = URL.createObjectURL(blob);
     link.download = `pallet_requests_week_${week}.csv`;
     link.click();
-});
+}
+
+document.getElementById('btn-export').addEventListener('click', exportToCSV);
+document.getElementById('btn-summary-export').addEventListener('click', exportToCSV);
 
 document.getElementById('btn-clear').addEventListener('click', async () => {
     if (confirm('모든 데이터를 초기화하시겠습니까?')) {
